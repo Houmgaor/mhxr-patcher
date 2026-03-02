@@ -171,8 +171,8 @@
       <input type="file" id="fileInput" accept=".apk">
     </div>
     <div style="text-align:center; margin: -0.5rem 0 1rem; font-size: 0.8rem; color: #666;">
-      Don't have it? <a href="https://github.com/Houmgaor/mhxr-patcher/releases/download/v1.0.0/mhxr-v09.03.06.apk" style="color:#4ecca3;">Download MHXR v09.03.06</a>
-      (~86 MB), then drop it above.
+      or <button id="btnFetch" style="background:none; border:none; color:#4ecca3; cursor:pointer; font-size:0.8rem; text-decoration:underline;">download it automatically</button>
+      (~86 MB)
     </div>
 
     <div class="form-group">
@@ -1253,6 +1253,30 @@ function updatePatchButton() {
   btnPatch.disabled = !selectedFile || !serverAddr.value.trim();
 }
 serverAddr.addEventListener('input', updatePatchButton);
+
+// Fetch APK from GitHub Release via CORS proxy, with direct-link fallback
+const APK_RELEASE_URL = 'https://github.com/Houmgaor/mhxr-patcher/releases/download/v1.0.0/mhxr-v09.03.06.apk';
+document.getElementById('btnFetch').addEventListener('click', async () => {
+  const btn = document.getElementById('btnFetch');
+  const origText = btn.textContent;
+  btn.textContent = 'Downloading (86 MB)...';
+  btn.disabled = true;
+  try {
+    // Try fetching through a CORS proxy
+    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(APK_RELEASE_URL);
+    const resp = await fetch(proxyUrl);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const blob = await resp.blob();
+    const file = new File([blob], 'mhxr-v09.03.06.apk', { type: 'application/vnd.android.package-archive' });
+    await selectFile(file);
+    btn.textContent = 'Downloaded!';
+  } catch (e) {
+    // Fallback: open direct download in browser
+    btn.textContent = origText;
+    btn.disabled = false;
+    window.open(APK_RELEASE_URL, '_blank');
+  }
+});
 
 
 function log(msg, cls = 'info') {
