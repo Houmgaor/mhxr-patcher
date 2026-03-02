@@ -171,8 +171,8 @@
       <input type="file" id="fileInput" accept=".apk">
     </div>
     <div style="text-align:center; margin: -0.5rem 0 1rem; font-size: 0.8rem; color: #666;">
-      or <button id="btnFetch" style="background:none; border:none; color:#4ecca3; cursor:pointer; font-size:0.8rem; text-decoration:underline;">download it automatically</button>
-      (~86 MB)
+      Don't have it? <a href="https://github.com/Houmgaor/mhxr-patcher/releases/download/v1.0.0/mhxr-v09.03.06.apk" style="color:#4ecca3;">Download MHXR v09.03.06</a>
+      (~86 MB), then drop it above.
     </div>
 
     <div class="form-group">
@@ -1254,24 +1254,6 @@ function updatePatchButton() {
 }
 serverAddr.addEventListener('input', updatePatchButton);
 
-// Fetch hosted APK (Git LFS via GitHub raw URL)
-const APK_URL = 'https://github.com/Houmgaor/mhxr-patcher/releases/download/v1.0.0/mhxr-v09.03.06.apk';
-document.getElementById('btnFetch').addEventListener('click', async () => {
-  const btn = document.getElementById('btnFetch');
-  btn.textContent = 'Downloading...';
-  btn.disabled = true;
-  try {
-    const resp = await fetch(APK_URL);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const blob = await resp.blob();
-    const file = new File([blob], 'mhxr-v09.03.06.apk', { type: 'application/vnd.android.package-archive' });
-    await selectFile(file);
-    btn.textContent = 'Downloaded!';
-  } catch (e) {
-    btn.textContent = 'Download failed — upload manually';
-    btn.disabled = false;
-  }
-});
 
 function log(msg, cls = 'info') {
   const span = document.createElement('span');

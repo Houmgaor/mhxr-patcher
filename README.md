@@ -36,4 +36,4 @@ npx serve .
 
 ## License
 
-AGPL-3.0 — same as [apypos-server](https://github.com/Houmgaor/apypos-server).
+[MIT](LICENSE)
