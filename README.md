@@ -23,6 +23,10 @@ All patching runs in your browser using [JSZip](https://stuk.github.io/jszip/) a
 4. Click **Patch APK**
 5. Download the patched APK and install on your device
 
+## iOS
+
+This patcher only supports the Android APK. We do not currently have a copy of the iOS IPA (v09.03.06). If you have one or know where to find it, please [open an issue on the Apypos server](https://github.com/Forgotten-MH/apypos-server/issues) — it would help with preservation and testing.
+
 ## Hosting
 
 This is a single `index.html` file with no build step. To host it yourself:
