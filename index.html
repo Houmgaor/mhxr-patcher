@@ -602,7 +602,7 @@ class DexPatcher {
     // tries_size stays 0
 
     const origInsnsSize = readU32LE(dex, codeOff + 12);
-    const newInsnsSize = 14;
+    const newInsnsSize = 19;
     if (newInsnsSize > origInsnsSize) {
       log(`Patch 4: New code (${newInsnsSize}) exceeds original (${origInsnsSize})`, 'err');
       return false;
@@ -610,49 +610,50 @@ class DexPatcher {
 
     writeU32LE(dex, codeOff + 12, newInsnsSize);
 
-    // Write instructions at codeOff + 16
+    // Write Dalvik instructions at codeOff + 16
+    // Format: opcode in low 8 bits, registers in high 8 bits of each 16-bit code unit
     const insOff = codeOff + 16;
     let w = insOff;
 
-    // const-string v0, ""
-    writeU16LE(dex, w, 0x1a00); w += 2;
+    // const-string v0, ""                         — 21c: AA|op BBBB
+    writeU16LE(dex, w, 0x001a); w += 2;
     writeU16LE(dex, w, strEmpty & 0xffff); w += 2;
 
-    // iput-object v0, p0, b->g:String
-    writeU16LE(dex, w, 0x5b02); w += 2;
+    // iput-object v0, p0(=v2), b->g:String        — 22c: B|A|op CCCC
+    writeU16LE(dex, w, 0x205b); w += 2;
     writeU16LE(dex, w, fldG & 0xffff); w += 2;
 
-    // const/4 v0, 0
+    // const/4 v0, 0                               — 11n: B|A|op
     writeU16LE(dex, w, 0x0012); w += 2;
 
-    // iput v0, p0, b->h:I
-    writeU16LE(dex, w, 0x5902); w += 2;
+    // iput v0, p0(=v2), b->h:I                    — 22c: B|A|op CCCC
+    writeU16LE(dex, w, 0x2059); w += 2;
     writeU16LE(dex, w, fldH & 0xffff); w += 2;
 
-    // iput-object p2, p0, b->e:b$a
-    writeU16LE(dex, w, 0x5b42); w += 2;
+    // iput-object p2(=v4), p0(=v2), b->e:b$a      — 22c: B|A|op CCCC
+    writeU16LE(dex, w, 0x245b); w += 2;
     writeU16LE(dex, w, fldE & 0xffff); w += 2;
 
-    // const/4 v1, 1
+    // const/4 v1, 1                               — 11n: B|A|op
     writeU16LE(dex, w, 0x1112); w += 2;
 
-    // iput v1, p0, b->d:I
-    writeU16LE(dex, w, 0x5912); w += 2;
+    // iput v1, p0(=v2), b->d:I                    — 22c: B|A|op CCCC
+    writeU16LE(dex, w, 0x2159); w += 2;
     writeU16LE(dex, w, fldD & 0xffff); w += 2;
 
-    // invoke-interface {p2, v0}, b$a->a(I)V
-    writeU16LE(dex, w, 0x7220); w += 2;
+    // invoke-interface {p2(=v4), v0}, b$a->a(I)V   — 35c: A|G|op BBBB F|E|D|C
+    writeU16LE(dex, w, 0x0272); w += 2;
     writeU16LE(dex, w, mtdCallbackA & 0xffff); w += 2;
-    writeU16LE(dex, w, 0x0004); w += 2; // p2=v4, v0
+    writeU16LE(dex, w, 0x0004); w += 2; // C=v4, D=v0
 
-    // const/4 v1, 2
+    // const/4 v1, 2                               — 11n: B|A|op
     writeU16LE(dex, w, 0x2112); w += 2;
 
-    // iput v1, p0, b->d:I
-    writeU16LE(dex, w, 0x5912); w += 2;
+    // iput v1, p0(=v2), b->d:I                    — 22c: B|A|op CCCC
+    writeU16LE(dex, w, 0x2159); w += 2;
     writeU16LE(dex, w, fldD & 0xffff); w += 2;
 
-    // return v0
+    // return v0                                   — 11x: AA|op
     writeU16LE(dex, w, 0x000f); w += 2;
 
     // NOP-pad remainder
@@ -691,8 +692,8 @@ class DexPatcher {
 
       if (s.ret === 'V') {
         // return-void = 0x000e
-        writeU16LE(dex, codeOff, 1);      // registers_size = 1 (min)
-        writeU16LE(dex, codeOff + 2, readU16LE(dex, codeOff + 2)); // keep ins_size
+        const insSize = readU16LE(dex, codeOff + 2); // ins_size
+        writeU16LE(dex, codeOff, Math.max(1, insSize)); // registers_size >= ins_size
         writeU16LE(dex, codeOff + 4, 0);  // outs_size = 0
         writeU32LE(dex, codeOff + 12, 1);
         writeU16LE(dex, codeOff + 16, 0x000e);
@@ -705,9 +706,9 @@ class DexPatcher {
         writeU16LE(dex, codeOff, insSize + 1); // registers_size = ins_size + 1
         writeU16LE(dex, codeOff + 4, 0);
         writeU32LE(dex, codeOff + 12, 3);
-        writeU16LE(dex, codeOff + 16, 0x1a00); // const-string v0, ""
+        writeU16LE(dex, codeOff + 16, 0x001a); // const-string v0, ""
         writeU16LE(dex, codeOff + 18, strEmpty & 0xffff);
-        writeU16LE(dex, codeOff + 20, 0x1100); // return-object v0
+        writeU16LE(dex, codeOff + 20, 0x0011); // return-object v0
         for (let i = 3; i < origInsnsSize; i++) writeU16LE(dex, codeOff + 16 + i * 2, 0x0000);
       }
       count++;
